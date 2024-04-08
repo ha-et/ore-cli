@@ -24,8 +24,8 @@ const SIMULATION_RETRIES: usize = 4;
 const GATEWAY_RETRIES: usize = 4;
 const CONFIRM_RETRIES: usize = 4;
 
-const CONFIRM_DELAY: u64 = 5000;
-const GATEWAY_DELAY: u64 = 2000;
+const CONFIRM_DELAY: u64 = 10;
+const GATEWAY_DELAY: u64 = 3;
 
 impl Miner {
     pub async fn send_and_confirm(
@@ -38,18 +38,6 @@ impl Miner {
         let signer = self.signer();
         let client =
             RpcClient::new_with_commitment(self.cluster.clone(), CommitmentConfig::confirmed());
-
-        // Return error if balance is zero
-        let balance = client
-            .get_balance_with_commitment(&signer.pubkey(), CommitmentConfig::confirmed())
-            .await
-            .unwrap();
-        if balance.value <= 0 {
-            return Err(ClientError {
-                request: None,
-                kind: ClientErrorKind::Custom("Insufficient SOL balance".into()),
-            });
-        }
 
         // Build tx
         let (mut hash, mut slot) = client
