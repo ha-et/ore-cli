@@ -32,7 +32,6 @@ impl Miner {
         // Start mining loop
         loop {
             // Fetch account state
-            let balance = self.get_ore_display_balance().await;
             let treasury = get_treasury(&self.rpc_client).await;
             let proof = get_proof(&self.rpc_client, signer.pubkey()).await;
             let rewards =
@@ -40,7 +39,6 @@ impl Miner {
             let reward_rate =
                 (treasury.reward_rate as f64) / (10f64.powf(ore::TOKEN_DECIMALS as f64));
             stdout.write_all(b"\x1b[2J\x1b[3J\x1b[H").ok();
-            println!("Balance: {} ORE", balance);
             println!("Claimable: {} ORE", rewards);
             println!("Reward rate: {} ORE", reward_rate);
 
@@ -51,7 +49,7 @@ impl Miner {
 
             // Submit mine tx.
             // Use busses randomly so on each epoch, transactions don't pile on the same busses
-            println!("\n\nSubmitting hash for validation...");
+            println!("\n\nSubmitting hash for validation..., next_hash: {} nonce: {}", next_hash, nonce);
             'submit: loop {
                 // Double check we're submitting for the right challenge
                 let proof_ = get_proof(&self.rpc_client, signer.pubkey()).await;
@@ -62,7 +60,7 @@ impl Miner {
                     nonce,
                     treasury.difficulty.into(),
                 ) {
-                    println!("Hash already validated! An earlier transaction must have landed.");
+                    println!("Hash already validated! An earlier transaction must have landed.next_hash: {}", next_hash);
                     break 'submit;
                 }
 
@@ -73,7 +71,7 @@ impl Miner {
                 if clock.unix_timestamp.ge(&threshold) {
                     // There are a lot of miners right now, so randomly select into submitting tx
                     if rng.gen_range(0..RESET_ODDS).eq(&0) {
-                        println!("Sending epoch reset transaction...");
+                        println!("Sending epoch reset transaction...next_hash: {}", next_hash);
                         let cu_limit_ix =
                             ComputeBudgetInstruction::set_compute_unit_limit(CU_LIMIT_RESET);
                         let cu_price_ix =

@@ -23,8 +23,6 @@ const SIMULATION_RETRIES: usize = 4;
 const GATEWAY_RETRIES: usize = 20;
 const CONFIRM_RETRIES: usize = 1;
 
-const CONFIRM_DELAY: u64 = 10;
-const GATEWAY_DELAY: u64 = 300;
 
 impl Miner {
     pub async fn send_and_confirm(
@@ -112,21 +110,22 @@ impl Miner {
 
         // Submit tx
         tx.sign(&[&signer], hash);
+        println!("send_transaction_with_config {:?}", hash);
         // let mut sigs = vec![];
         let mut attempts = 0;
         loop {
             println!("Attempt: {:?}", attempts);
             match client.send_transaction_with_config(&tx, send_cfg).await {
                 Ok(sig) => {
-                    println!("{:?}", sig);
+                    println!("send_transaction_with_config {:?}", sig);
                     // sigs.push(sig);
 
                     // Confirm tx
                     if skip_confirm {
                         return Ok(sig);
                     }
-                    for _ in 0..CONFIRM_RETRIES {
-                        std::thread::sleep(Duration::from_millis(CONFIRM_DELAY));
+                    for _ in 0..2 {
+                        std::thread::sleep(Duration::from_millis(600));
                         match client.get_signature_statuses(&[sig]).await {
                             Ok(signature_statuses) => {
                                 println!("Confirmation: {:?}", signature_statuses.value[0]);
@@ -141,10 +140,8 @@ impl Miner {
                                                 TransactionConfirmationStatus::Processed => {}
                                                 TransactionConfirmationStatus::Confirmed
                                                 | TransactionConfirmationStatus::Finalized => {
-                                                    println!("Transaction landed!");
-                                                    std::thread::sleep(Duration::from_millis(
-                                                        GATEWAY_DELAY,
-                                                    ));
+                                                    println!("Transaction landed!, hash={}", hash);
+                                                    std::thread::sleep(Duration::from_millis(10));
                                                     return Ok(sig);
                                                 }
                                             }
@@ -161,7 +158,7 @@ impl Miner {
                             }
                         }
                     }
-                    println!("Transaction did not land");
+                    println!("Transaction did not land, hash={}", hash);
                 }
 
                 // Handle submit errors
@@ -172,7 +169,7 @@ impl Miner {
 
             // Retry
             stdout.flush().ok();
-            std::thread::sleep(Duration::from_millis(GATEWAY_DELAY));
+            std::thread::sleep(Duration::from_millis(10));
             attempts += 1;
             if attempts > GATEWAY_RETRIES {
                 return Err(ClientError {
