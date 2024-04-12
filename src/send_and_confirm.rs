@@ -2,6 +2,7 @@ use std::{
     io::{stdout, Write},
     time::Duration,
 };
+use cached::instant::now;
 
 use solana_client::{
     client_error::{ClientError, ClientErrorKind, Result as ClientResult},
@@ -20,7 +21,7 @@ use crate::Miner;
 
 const RPC_RETRIES: usize = 0;
 const SIMULATION_RETRIES: usize = 4;
-const GATEWAY_RETRIES: usize = 20;
+const GATEWAY_RETRIES: usize = 2;
 const CONFIRM_RETRIES: usize = 1;
 
 
@@ -124,8 +125,8 @@ impl Miner {
                     if skip_confirm {
                         return Ok(sig);
                     }
-                    for _ in 0..2 {
-                        std::thread::sleep(Duration::from_millis(600));
+                    for _ in 0..20 {
+                        std::thread::sleep(Duration::from_millis(300));
                         match client.get_signature_statuses(&[sig]).await {
                             Ok(signature_statuses) => {
                                 println!("Confirmation: {:?}", signature_statuses.value[0]);
@@ -140,7 +141,7 @@ impl Miner {
                                                 TransactionConfirmationStatus::Processed => {}
                                                 TransactionConfirmationStatus::Confirmed
                                                 | TransactionConfirmationStatus::Finalized => {
-                                                    println!("Transaction landed!, hash={}", hash);
+                                                    println!("{}:Transaction landed!, hash={}", now(), hash);
                                                     std::thread::sleep(Duration::from_millis(10));
                                                     return Ok(sig);
                                                 }
@@ -158,7 +159,7 @@ impl Miner {
                             }
                         }
                     }
-                    println!("Transaction did not land, hash={}", hash);
+                    println!("{}:Transaction did not land, hash={}", now(), hash);
                 }
 
                 // Handle submit errors
@@ -169,7 +170,7 @@ impl Miner {
 
             // Retry
             stdout.flush().ok();
-            std::thread::sleep(Duration::from_millis(10));
+            std::thread::sleep(Duration::from_millis(20));
             attempts += 1;
             if attempts > GATEWAY_RETRIES {
                 return Err(ClientError {
