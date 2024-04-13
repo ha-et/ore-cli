@@ -24,5 +24,5 @@ mkdir -p $3/tmp
 for ((i=$1; i<=$1+$2; i++)); do
     echo "execute $i"
     solana-keygen new --derivation-path m/44'/501'/0'/0' --force >> wallet.log
-    mv /root/.config/solana/id.json $3/tmp/id$i.json
+    mv $3/id.json $3/tmp/id$i.json
 done
