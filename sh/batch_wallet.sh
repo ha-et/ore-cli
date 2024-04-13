@@ -18,6 +18,7 @@ if [ -z "$3" ]; then
     exit 1
 fi
 
+mkdir -p $3/tmp
 
 # 循环执行脚本指定次数
 for ((i=$1; i<=$1+$2; i++)); do
