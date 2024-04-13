@@ -21,7 +21,7 @@ fi
 mkdir -p $3/tmp
 
 # 循环执行脚本指定次数
-for ((i=$1; i<=$1+$2; i++)); do
+for ((i=$1; i<=$1+$2-1; i++)); do
     echo "execute $i"
     solana-keygen new --derivation-path m/44'/501'/0'/0' --force >> wallet.log
     mv $3/id.json $3/tmp/id$i.json
