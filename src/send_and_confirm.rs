@@ -126,7 +126,7 @@ impl Miner {
                         return Ok(sig);
                     }
                     for _ in 0..2 {
-                        std::thread::sleep(Duration::from_millis(600));
+                        std::thread::sleep(Duration::from_millis(300));
                         match client.get_signature_statuses(&[sig]).await {
                             Ok(signature_statuses) => {
                                 println!("Confirmation: {:?}", signature_statuses.value[0]);
