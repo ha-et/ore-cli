@@ -63,9 +63,11 @@ table = PrettyTable()
 table.field_names = ["钱包", "本次查询余额", "上次查询余额", "差异", "预计小时收益", "每日收益"]
 
 # 处理30个ID文件
-for i in range(1, 31):
+for i in range(1, 34):
     # 构造ID文件路径
     id_file = f"id{i}.json"
+    if not os.path.exists(id_file):
+        continue
 
     # 查询 rewards，并将结果保存到变量中
     result = subprocess.run(["ore", "--rpc", "https://api.mainnet-beta.solana.com", "--keypair", id_file, "rewards"], capture_output=True, text=True)
