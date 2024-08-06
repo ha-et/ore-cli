@@ -40,11 +40,12 @@ impl Miner {
             );
 
             // Calc cutoff time
-            let cutoff_time = self.get_cutoff(proof, args.buffer_time).await;
+            let cutoff_time = 75; //self.get_cutoff(proof, args.buffer_time).await;
 
             // Run drillx
             let config = get_config(&self.rpc_client).await;
-            let solution = Self::find_hash_par(
+            println!("Difficulty: {} ,cutoff_time: {}", config.min_difficulty, cutoff_time);
+            let (solution, best_difficulty) = Self::find_hash_par(
                 proof,
                 cutoff_time,
                 args.threads,
@@ -65,9 +66,15 @@ impl Miner {
                 find_bus(),
                 solution,
             ));
-            self.send_and_confirm(&ixs, ComputeBudget::Fixed(compute_budget), false)
-                .await
-                .ok();
+            let min_difficulty  = 19;
+            if  best_difficulty >= min_difficulty  {
+                println!("best_difficulty: {} >= {}", best_difficulty, min_difficulty);
+                self.send_and_confirm(&ixs, ComputeBudget::Fixed(compute_budget), false)
+                    .await
+                    .ok();
+            } else {
+                println!("skipped commit! best_difficulty: {} < {}", best_difficulty, min_difficulty);
+            }
         }
     }
 
@@ -76,7 +83,7 @@ impl Miner {
         cutoff_time: u64,
         threads: u64,
         min_difficulty: u32,
-    ) -> Solution {
+    ) -> (Solution, u32) {
         // Dispatch job to each thread
         let progress_bar = Arc::new(spinner::new_progress_bar());
         progress_bar.set_message("Mining...");
@@ -89,6 +96,7 @@ impl Miner {
                     move || {
                         let timer = Instant::now();
                         let mut nonce = u64::MAX.saturating_div(threads).saturating_mul(i);
+                        // println!("nonce: {}", nonce);
                         let mut best_nonce = nonce;
                         let mut best_difficulty = 0;
                         let mut best_hash = Hash::default();
@@ -154,7 +162,7 @@ impl Miner {
             best_difficulty
         ));
 
-        Solution::new(best_hash.d, best_nonce.to_le_bytes())
+        (Solution::new(best_hash.d, best_nonce.to_le_bytes()), best_difficulty)
     }
 
     pub fn check_num_cores(&self, threads: u64) {
@@ -186,7 +194,7 @@ impl Miner {
             .saturating_add(60)
             .saturating_sub(buffer_time as i64)
             .saturating_sub(clock.unix_timestamp)
-            .max(0) as u64
+            .max(50) as u64
     }
 }
 
